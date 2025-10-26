@@ -1,0 +1,30 @@
+diff --git a/database.py b/database.py
+index 8d5f1b1..fix1234 100644
+--- a/database.py
++++ b/database.py
+@@
+-from pymongo import MongoClient
++from pymongo import MongoClient
+ from datetime import datetime, timezone
+ import os
+ from dotenv import load_dotenv
+ from typing import Union
+ from pydantic import BaseModel
+@@
+-database_url = os.getenv("DATABASE_URL")
+-database_name = os.getenv("DATABASE_NAME")
+-
+-if database_url and database_name:
+-    _client = MongoClient(database_url)
+-    db = _client[database_name]
++database_url = os.getenv("DATABASE_URL")
++database_name = os.getenv("DATABASE_NAME")
++
++# Initialize client defensively so missing/invalid Mongo URIs don't crash the app
++if database_url and database_name:
++    try:
++        _client = MongoClient(database_url)
++        db = _client[database_name]
++    except Exception:
++        # Leave db as None; API endpoints should handle this gracefully
++        db = None

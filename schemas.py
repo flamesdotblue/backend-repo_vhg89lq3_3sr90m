@@ -1,48 +1,60 @@
 """
-Database Schemas
+Campus Portal Database Schemas
 
-Define your MongoDB collection schemas here using Pydantic models.
-These schemas are used for data validation in your application.
+Define MongoDB collection schemas using Pydantic models. Each model name maps to a
+collection with the lowercase class name.
 
-Each Pydantic model represents a collection in your database.
-Model name is converted to lowercase for the collection name:
-- User -> "user" collection
-- Product -> "product" collection
-- BlogPost -> "blogs" collection
+Examples:
+- CampusUser -> "campususer"
+- Event -> "event"
+- AttendanceRecord -> "attendancerecord"
+- AttendanceOverride -> "attendanceoverride"
 """
 
-from pydantic import BaseModel, Field
-from typing import Optional
+from datetime import date as DateType, datetime as DateTimeType
+from typing import Literal, Optional
+from pydantic import BaseModel, Field, EmailStr
 
-# Example schemas (replace with your own):
 
-class User(BaseModel):
+class CampusUser(BaseModel):
     """
-    Users collection schema
-    Collection name: "user" (lowercase of class name)
+    Users of the campus portal (demo auth)
+    Collection: "campususer"
     """
+    role: Literal["student", "teacher"] = Field(..., description="User role")
     name: str = Field(..., description="Full name")
-    email: str = Field(..., description="Email address")
-    address: str = Field(..., description="Address")
-    age: Optional[int] = Field(None, ge=0, le=120, description="Age in years")
-    is_active: bool = Field(True, description="Whether user is active")
+    email: EmailStr = Field(..., description="Email address")
+    mobile: Optional[str] = Field(None, description="Mobile number")
+    roll: Optional[str] = Field(None, description="Roll number for students")
 
-class Product(BaseModel):
+
+class Event(BaseModel):
     """
-    Products collection schema
-    Collection name: "product" (lowercase of class name)
+    Campus events created by teachers and visible to all
+    Collection: "event"
     """
-    title: str = Field(..., description="Product title")
-    description: Optional[str] = Field(None, description="Product description")
-    price: float = Field(..., ge=0, description="Price in dollars")
-    category: str = Field(..., description="Product category")
-    in_stock: bool = Field(True, description="Whether product is in stock")
+    title: str = Field(..., description="Event title")
+    description: Optional[str] = Field(None, description="Event details")
+    date: DateTimeType = Field(..., description="Event date/time (ISO)")
+    location: Optional[str] = Field(None, description="Location or venue")
+    created_by_role: Literal["teacher", "student"] = Field("teacher", description="Who created the event")
 
-# Add your own schemas here:
-# --------------------------------------------------
 
-# Note: The Flames database viewer will automatically:
-# 1. Read these schemas from GET /schema endpoint
-# 2. Use them for document validation when creating/editing
-# 3. Handle all database operations (CRUD) directly
-# 4. You don't need to create any database endpoints!
+class AttendanceRecord(BaseModel):
+    """
+    Daily attendance entries marked by teachers
+    Collection: "attendancerecord"
+    """
+    roll: str = Field(..., description="Student roll number")
+    attendance_date: DateType = Field(..., description="Attendance date (YYYY-MM-DD)")
+    status: Literal["present", "absent"] = Field(..., description="Attendance status")
+    marked_by_role: Literal["teacher"] = Field("teacher", description="Marker role")
+
+
+class AttendanceOverride(BaseModel):
+    """
+    Manual percentage overrides per student (set by teachers)
+    Collection: "attendanceoverride"
+    """
+    roll: str = Field(..., description="Student roll number")
+    manual_percentage: float = Field(..., ge=0, le=100, description="Manual attendance percentage")
